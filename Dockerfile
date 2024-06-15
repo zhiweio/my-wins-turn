@@ -8,7 +8,7 @@ RUN pip install poetry
 
 COPY pyproject.toml /app/
 
-RUN poetry install --no-root --no-dev
+RUN poetry install --only main
 
 RUN poetry cache clear --all pypi
 RUN rm -rf /root/.cache/pip

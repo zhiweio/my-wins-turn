@@ -67,7 +67,7 @@ class Computer:
         return False
 
     def shutdown(self):
-        output, error = self.exec_command("Shutdown.exe -sg -f -d p:2:4")
+        output, error = self.exec_command("Shutdown.exe -s -f")
         LOG.info(f"Shutdown initiated: {output}")
         return error
 
@@ -146,25 +146,41 @@ def test_pc_available(computer_name):
         return
 
     with st.spinner(f"Checking PC {computer_name} Service..."):
-        with Computer(**retrieve_pc_credential(computer_name)) as pc:
+        pc = Computer(**retrieve_pc_credential(computer_name))
+        try:
+            pc.connect()
+        except Exception as e:
+            LOG.error(f"Error connecting to PC {pc.host}")
+            st.session_state.pc_status[computer_name] = "Unavailable"
+        else:
             if pc.is_available():
                 st.session_state.pc_status[computer_name] = "Available"
             else:
                 st.session_state.pc_status[computer_name] = "Unavailable"
+            pc.close()
 
 
 def click_run_computer(computer_name, action, offline=False):
     if not retrieve_pc_credential(computer_name):
         st.toast(":orange-background[No PC settings]", icon="⚠️")
         return
+    pc = Computer(**retrieve_pc_credential(computer_name))
     if offline:
-        pc = Computer(**retrieve_pc_credential(computer_name))
         err = getattr(pc, action)()
     else:
-        with Computer(**retrieve_pc_credential(computer_name)) as pc:
-            err = getattr(pc, action)()
+        try:
+            pc.connect()
+            if pc.is_available():
+                err = getattr(pc, action)()
+            else:
+                err = "PC unavailable"
+            pc.close()
+        except Exception:
+            err = "PC already in sleep or shutdown"
     if err:
         st.toast(f":orange-background[{err}]", icon="⚠️")
+    else:
+        st.toast(":green-background[Completed!]")
 
 
 def pc_settings_frag():

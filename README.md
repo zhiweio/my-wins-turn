@@ -2,6 +2,8 @@
 
 My Win's Turn！远程控制我的 Windows PC 开关机和休眠、唤醒。
 
+![](./screenshot.png)
+
 ## 如何工作
 
 - 利用 Wake-on-LAN 发送 Magic packet 数据包对 PC 进行唤醒和开机；
@@ -33,10 +35,3 @@ if (!(Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyCon
     Write-Output "Firewall rule 'OpenSSH-Server-In-TCP' has been created and exists."
 }
 ```
-
-# SSH 访问测试
-
-```powershell
-ssh username@servername
-```
-
