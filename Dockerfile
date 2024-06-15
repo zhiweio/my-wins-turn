@@ -6,7 +6,7 @@ RUN pip config set global.index-url https://pypi.mirrors.ustc.edu.cn/simple/
 
 RUN pip install poetry
 
-COPY pyproject.toml /app/
+COPY pyproject.toml poetry.toml /app/
 
 RUN poetry install --only main
 
@@ -15,4 +15,4 @@ RUN rm -rf /root/.cache/pip
 
 COPY my_wins_turn/app.py /app/
 
-ENTRYPOINT ["poetry", "run", "streamlit", "run", "app/app.py"]
+ENTRYPOINT ["poetry", "run", "streamlit", "run", "app.py"]
