@@ -35,3 +35,39 @@ if (!(Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyCon
     Write-Output "Firewall rule 'OpenSSH-Server-In-TCP' has been created and exists."
 }
 ```
+
+## 在 Windows 上开启 Wake on LAN
+
+管理员权限打开 Powershell 终端
+
+```powershell
+# 查看网卡设备
+powercfg -devicequery wake_armed
+
+# 设置网卡设备
+powercfg -devicedisablewake “Device name”
+```
+
+## 在极空间 NAS 上部署应用
+
+### 自行构建 Docker 镜像上传极空间
+
+构建镜像
+```bash
+$ docker buildx build --platform="linux/arm64" -t zhiweio/my-wins-turn:latest .
+```
+
+导出镜像包
+```bash
+$ docker save zhiweio/my-wins-turn:latest -o my-wins-turn.tar
+```
+
+上传到极空间并导入仓库
+
+### 直接从 DockerHub 拉取镜像
+
+待补充
+
+### 部署应用
+
+容器端口映射 8501 即可
