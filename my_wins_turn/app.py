@@ -1,4 +1,6 @@
 import json
+import os
+import textwrap
 from functools import partial
 from pathlib import Path
 
@@ -17,8 +19,34 @@ logging.basicConfig(
 
 LOG = logging.getLogger(__name__)
 
+# TODO: ugly sleep, replace with proper implementation
+sleep_script_name = "my-wins-turn-sleep.ps1"
+sleep_script = Path("./" + sleep_script_name)
+if not sleep_script.exists():
+    sleep_script.write_text(
+        textwrap.dedent(
+            """
+            Add-Type -TypeDefinition @"
+            using System;
+            using System.Runtime.InteropServices;
+            public class SleepHelper {
+                [DllImport("Powrprof.dll", SetLastError = true)]
+                public static extern bool SetSuspendState(bool hibernate, bool forceCritical, bool disableWakeEvent);
+            }
+            "@
+            [SleepHelper]::SetSuspendState($false, $true, $true)
+            """
+        ),
+        encoding="utf-8",
+    )
+
 
 class Computer:
+    """
+    Windows system commands reference:
+        https://github.com/microsoft/PowerToys/blob/main/src/modules/launcher/Plugins/Microsoft.PowerToys.Run.Plugin.System/Components/Commands.cs
+    """
+
     def __init__(self, host, mac, user, password, port=22):
         self.host = host
         self.port = port
@@ -66,25 +94,60 @@ class Computer:
         LOG.error(f"Error connecting the SSH: {error}")
         return False
 
+    def _file_exists(self, sftp, remote_path):
+        try:
+            sftp.stat(remote_path)
+            return True
+        except FileNotFoundError:
+            return False
+
+    def _upload_file(self, local_path, remote_path):
+        if self._ssh_client is None:
+            self.connect()
+        filename = os.path.basename(local_path)
+        sftp = None
+        try:
+            sftp = self._ssh_client.open_sftp()
+            if not self._file_exists(sftp, remote_path + filename):
+                sftp.put(local_path, remote_path + filename)
+                LOG.info(f"File {local_path} uploaded to {remote_path}")
+            else:
+                LOG.info(f"File {filename} already exists at {remote_path}")
+
+        except Exception as e:
+            LOG.error(f"Error uploading: {e}")
+        finally:
+            if sftp:
+                sftp.close()
+
+    def create_sleep_script(self):
+        local_path = str(sleep_script)
+        remote_path = f"C:/Users/{self.user}/"
+        self._upload_file(local_path, remote_path)
+        return remote_path + sleep_script_name
+
     def shutdown(self):
-        output, error = self.exec_command("Shutdown.exe -s -f")
+        output, error = self.exec_command("shutdown /s /hybrid /t 0")
         LOG.info(f"Shutdown initiated: {output}")
         return error
 
     def hibernate(self):
-        output, error = self.exec_command("Shutdown.exe -h -f")
+        output, error = self.exec_command(
+            "rundll32.exe powrprof.dll,SetSuspendState 1,1,1"
+        )
         LOG.info(f"Hibernate initiated: {output}")
         return error
 
     def sleep(self):
+        script_path = self.create_sleep_script()
         output, error = self.exec_command(
-            "rundll32.exe powrprof.dll,SetSuspendState 0,1,0"
+            f'powershell -ExecutionPolicy Bypass -File "{script_path}"'
         )
         LOG.info(f"Sleep initiated: {output}")
         return error
 
     def reboot(self):
-        output, error = self.exec_command("Shutdown.exe -r -g -f")
+        output, error = self.exec_command("shutdown /r /t 0")
         LOG.info(f"Reboot initiated: {output}")
         return error
 
@@ -96,6 +159,11 @@ class Computer:
         except Exception as e:
             LOG.error(f"Error sending Wake-on-LAN packet: {e}")
             error = str(e)
+        return error
+
+    def lock(self):
+        output, error = self.exec_command("rundll32.exe user32.dll,LockWorkStation")
+        LOG.info(f"Lock work station initiated: {output}")
         return error
 
 

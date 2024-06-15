@@ -45,7 +45,7 @@ if (!(Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyCon
 powercfg -devicequery wake_armed
 
 # 设置网卡设备
-powercfg -devicedisablewake “Device name”
+powercfg -deviceenablewake “Device name”
 ```
 
 ## 在极空间 NAS 上部署应用
