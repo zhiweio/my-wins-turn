@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "my-wins-turn"
+version = "0.1.0"
+description = "My Win's Turn! Turn on/off my Windows PC remotely."
+authors = ["wangzhiwei <noparking188@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.9.7 || >3.9.7,<4.0"
+streamlit = "^1.35.0"
+pywinrm = "^0.4.3"
+wakeonlan = "^3.1.0"
+paramiko = "^3.4.0"
+
+[[tool.poetry.source]]
+name = "ustc"
+url = "https://pypi.mirrors.ustc.edu.cn/simple"
+priority = "primary"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
